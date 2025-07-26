@@ -8,4 +8,4 @@ A data format for purpose of learning. It's purpose is to be fast and simple.
 - [ ] Log-structured merge-tree([LSTM](https://en.wikipedia.org/wiki/Log-structured_merge-tree))
 
 ## To do
-- [ ] Meta data creation
+- [x] Meta data creation
