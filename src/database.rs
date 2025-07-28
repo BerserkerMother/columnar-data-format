@@ -4,7 +4,7 @@ use std::{fs, io};
 
 use log::debug;
 
-use crate::metadata::{FieldMetadata, Metadata};
+use crate::metadata::{FieldMeta, Metadata};
 use crate::numeric::Numeric;
 use crate::text::Text;
 
@@ -26,25 +26,12 @@ impl Database {
     }
 
     fn from_bytes(bytes: Vec<u8>) -> Result<Database, Box<dyn std::error::Error>> {
-        let mut buffer = bytes.as_slice();
-        let length = read_usize(buffer)?;
-        debug!("length {length}");
-        buffer = &buffer[8..];
+        let buffer = bytes.as_slice();
+        let meta = Metadata::from_slice(buffer)?;
 
-        let mut paths = Vec::with_capacity(length);
+        let fields = Vec::with_capacity(meta.num_fields());
 
-        for _ in 0..length {
-            let path_length = read_usize(buffer)?;
-            buffer = &buffer[8..];
-            let path = str::from_utf8(&buffer[..path_length])?;
-            buffer = &buffer[path_length..];
-            paths.push(path.into());
-        }
-
-        Ok(Database {
-            meta: Metadata::new(length, paths),
-            fields: vec![],
-        })
+        Ok(Database { meta, fields })
     }
 
     pub fn to_disk(&self, path: impl AsRef<Path>) -> io::Result<()> {
@@ -54,18 +41,16 @@ impl Database {
         fs::create_dir(path.as_ref())?;
         let meta_path = path.as_ref().join("meta");
         let mut meta_file = fs::File::create(meta_path)?;
-        meta_file.write_all(&self.meta.to_bytes())?;
+        let mut buffer = vec![];
+        self.meta.write_bytes(&mut buffer)?;
+        meta_file.write_all(&buffer)?;
         Ok(())
     }
 }
 
-fn read_usize(buf: &[u8]) -> Result<usize, Box<dyn std::error::Error>> {
-    Ok(usize::from_le_bytes(buf[0..8].try_into()?))
-}
-
 #[derive(Debug)]
 pub struct Field {
-    meta: FieldMetadata,
+    meta: FieldMeta,
     inner: FieldType,
 }
 
@@ -79,26 +64,33 @@ pub enum FieldType {
 mod tests {
     use std::io::Write;
 
+    use crate::metadata::FieldType;
+
     use super::*;
     #[test]
     fn database_from_bytes_meta() {
         // make actual
         let actual = Database {
-            meta: Metadata::new(3, vec!["hello".into(), "there".into(), "you".into()]),
+            meta: Metadata::new(
+                2,
+                vec![
+                    FieldMeta::new("hello".to_string(), FieldType::Text),
+                    FieldMeta::new("there".to_string(), FieldType::Numeric),
+                ],
+            ),
             fields: vec![],
         };
 
         let mut buffer: Vec<u8> = vec![];
-        buffer.write_all(3usize.to_le_bytes().as_slice()).unwrap();
+        buffer.write_all(2usize.to_le_bytes().as_slice()).unwrap();
 
         buffer.write_all(5usize.to_le_bytes().as_slice()).unwrap();
         buffer.write_all("hello".as_bytes()).unwrap();
+        buffer.write_all(&[1]).unwrap();
 
         buffer.write_all(5usize.to_le_bytes().as_slice()).unwrap();
         buffer.write_all("there".as_bytes()).unwrap();
-
-        buffer.write_all(3usize.to_le_bytes().as_slice()).unwrap();
-        buffer.write_all("you".as_bytes()).unwrap();
+        buffer.write_all(&[0]).unwrap();
 
         let got = Database::from_bytes(buffer).unwrap();
         println!("{:?}", &got);
