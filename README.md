@@ -9,3 +9,5 @@ A data format for purpose of learning. It's purpose is to be fast and simple.
 
 ## To do
 - [x] Meta data creation
+- [ ] Make a bitvec kinda of thing for storeing nulls e.g. 0 or 1 for each record in a column
+- [ ] Serialize numeric and text types
