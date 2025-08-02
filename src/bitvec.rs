@@ -1,4 +1,20 @@
-#[derive(Debug, Default)]
+use std::{
+    iter::Enumerate,
+    ops::{Index, IndexMut},
+};
+
+#[macro_export]
+macro_rules! bitvec {
+    ($($e:expr),*) => {{
+        let mut bitvec = BitVec::new();
+        $(
+            bitvec.push($e);
+        )*
+        bitvec
+    }};
+}
+
+#[derive(Debug, Default, PartialEq, Eq)]
 pub struct BitVec {
     inner: Vec<u8>, // 24 byte
     length: usize,  // 8 byte
@@ -9,19 +25,23 @@ impl BitVec {
         BitVec::default()
     }
 
+    pub fn len(&self) -> usize {
+        self.inner.len()
+    }
+
     pub fn push(&mut self, value: bool) {
-        let bucket = self.length / 8;
-        let index = self.length % 8;
-        if index == 0 {
+        let byte = self.length / 8;
+        let bit = self.length % 8;
+        if bit == 0 {
             // need to allocate a u8
             self.inner.push(0);
         }
 
         self.length += 1;
         if value {
-            self.inner[bucket] |= 1 << index
+            self.inner[byte] |= 1 << bit
         } else {
-            self.inner[bucket] &= !(1 << index)
+            self.inner[byte] &= !(1 << bit)
         }
     }
 
@@ -37,7 +57,7 @@ impl BitVec {
         value == 1
     }
 
-    pub fn get(&mut self, index: usize) -> Option<bool> {
+    pub fn get(&self, index: usize) -> Option<bool> {
         let bucket = index / 8;
         if bucket >= self.inner.len() {
             return None;
@@ -65,6 +85,59 @@ impl BitVec {
             self.inner[bucket_a] ^= 1 << index_a;
             self.inner[bucket_b] ^= 1 << index_b;
         }
+    }
+
+    #[inline]
+    pub fn set(&mut self, index: usize, value: bool) {
+        let byte = index / 8;
+        let bit = index % 8;
+        self._set(byte, bit, value);
+    }
+
+    #[inline]
+    fn _set(&mut self, byte: usize, bit: usize, value: bool) {
+        if value {
+            self.inner[byte] |= 1 << bit;
+        } else {
+            self.inner[byte] &= !(1 << bit);
+        }
+    }
+
+    pub fn iter(&self) -> Iter {
+        Iter {
+            ptr: self.inner.as_slice(),
+            length: self.length,
+            index: 0,
+        }
+    }
+}
+
+pub struct Iter<'a> {
+    length: usize,
+    index: usize,
+    ptr: &'a [u8],
+}
+
+impl Index<usize> for BitVec {
+    type Output = bool;
+    fn index(&self, index: usize) -> &Self::Output {
+        match self.get(index).unwrap() {
+            true => &true,
+            false => &false,
+        }
+    }
+}
+
+impl<'a> Iterator for Iter<'a> {
+    type Item = bool;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index >= self.length {
+            return None;
+        }
+        let byte = self.ptr[self.index / 8];
+        let value = (byte >> (self.index % 8)) & 1;
+        self.index += 1;
+        Some(value == 1)
     }
 }
 
