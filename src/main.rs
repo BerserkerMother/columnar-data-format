@@ -1,11 +1,11 @@
+mod bitvec;
 mod database;
-mod numeric;
-mod bitmap;
+mod fixed;
 mod storage;
 mod text;
 mod util;
 
 fn main() {
-    let col = database::NumberColumn::test_new();
+    let col = fixed::Fixed::test_new();
     println!("{:?}", col);
 }
