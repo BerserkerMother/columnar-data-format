@@ -7,5 +7,5 @@ mod util;
 
 fn main() {
     let col = fixed::FloatArray::test_new();
-    println!("{:?}", col.get_records());
+    dbg!(col.get_records().nth(9).unwrap());
 }

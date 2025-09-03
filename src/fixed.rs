@@ -94,7 +94,10 @@ impl<T> Fixed<T> {
 
     // there is no need to allocate buffer here. Just use another struct for viewing.
     pub fn get_records(&self) -> FixedViewer<'_, T> {
-        FixedViewer { inner: self }
+        FixedViewer {
+            inner: self,
+            index: 0,
+        }
     }
 
     // updating is a bit tricky because we must calculate wether the element is null for not
@@ -135,7 +138,41 @@ impl<T> Fixed<T> {
 
 pub struct FixedViewer<'a, T> {
     inner: &'a Fixed<T>,
+    index: usize, // for iterating
 }
+
+impl<'a, T: Copy> Iterator for FixedViewer<'a, T> {
+    type Item = Option<T>; // returns Options because it can be null
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index >= self.inner.data.len() {
+            return None;
+        }
+
+        let not_null = self.inner.nulls[self.index];
+        let value = {
+            if not_null {
+                Some(self.inner.data[self.index])
+            } else {
+                None
+            }
+        };
+        self.index += 1;
+        Some(value)
+    }
+
+    fn nth(&mut self, n: usize) -> Option<Self::Item> {
+        self.index = n;
+        self.next()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let size = self.inner.data.len() - self.index;
+        (size, Some(size))
+    }
+}
+
+impl<'a, T: Copy> ExactSizeIterator for FixedViewer<'a, T> {}
+
 //
 // lets have debug way of seeing the column for dev
 impl<'a> Debug for FixedViewer<'a, f32> {
