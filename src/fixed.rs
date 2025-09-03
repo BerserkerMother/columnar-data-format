@@ -1,5 +1,5 @@
-// a column is a structure that hold allows all operation on data. read, write, update, and delete .
-// lets image an isize column
+// a column is a structure that allows all operation on data. read, write, update, and delete .
+// lets imagine an isize column
 // what should be the internal representation? a naive way would be a vec. it is very good for
 // reading and writing however, update and delete would be costly, especially if we are deleting
 // multiple records from it.
@@ -12,13 +12,19 @@
 // it. This means we could have 100 records but the data vec be of size 90(because 10 are null).
 // Nevertheless, it is bad design to complicate things. We must keep it simple if possible. And
 // there would be few instances of null which is normal and part of user data!
-// Maybe if our data was sparse in nature, it would be feasiable, but for now keep it simple!
+// Maybe if our data was sparse in nature it would be feasiable, but for now let's keep it simple!
 
-// These values can ofcourse be presenet in vec and set to default(0 for isize) but that would
-// waste 8 bytes! Option takes 1 + 8 byte even of the variant in None(without considering alignment), So I am going with bitvec
-// thing. For now, I use a byte as a bit(wasting 7bit per record :)) and then improve it.
+// Null values can of course be presenet in vec and set to default(0 for isize) but that would
+// waste 8 bytes! Making them Option<T>. It takes 1 + 8 byte(without considering alignment), So I am going with bitvec
+// thingy. For now, I use a byte as a bit(wasting 7bit per record :)) and then improve it.
 
-use std::fmt::{Debug, Display};
+// Lets to an int and float type def.
+
+pub type IntArray = Fixed<i32>;
+
+pub type FloatArray = Fixed<f32>;
+
+use std::fmt::Debug;
 
 use crate::bitvec;
 use crate::bitvec::BitVec;
@@ -39,11 +45,25 @@ impl<T> Default for Fixed<T> {
     }
 }
 
-impl Fixed<isize> {
-    pub fn test_new() -> Fixed<isize> {
+impl Fixed<i32> {
+    pub fn test_new() -> Fixed<i32> {
         Fixed {
             name: "test col".to_string(),
             data: vec![1, 2, 3, 0, 0, 0, 4, 5, 0, 6],
+            nulls: bitvec![
+                true, true, true, false, false, false, true, true, true, true
+            ],
+        }
+    }
+}
+
+impl Fixed<f32> {
+    pub fn test_new() -> Fixed<f32> {
+        Fixed {
+            name: "test col".to_string(),
+            data: vec![
+                1.123f32, 2f32, 3f32, 0f32, 0f32, 0f32, 4f32, 5f32, 0f32, 6f32,
+            ],
             nulls: bitvec![
                 true, true, true, false, false, false, true, true, true, true
             ],
@@ -71,17 +91,10 @@ impl<T> Fixed<T> {
     }
 
     // somehow I have to get records, I would just allocate new buffer each time for now.
-    pub fn get_records(&self) -> Vec<Option<&T>> {
-        let mut data = Vec::with_capacity(self.nulls.len());
-        // ASM CHECK: whats the difference between iterating over isize ref and isize
-        for (index, null) in self.nulls.iter().enumerate() {
-            if !null {
-                data.push(None);
-            } else {
-                data.push(Some(&self.data[index]));
-            }
-        }
-        data
+
+    // there is no need to allocate buffer here. Just use another struct for viewing.
+    pub fn get_records(&self) -> FixedViewer<'_, T> {
+        FixedViewer { inner: self }
     }
 
     // updating is a bit tricky because we must calculate wether the element is null for not
@@ -120,16 +133,34 @@ impl<T> Fixed<T> {
     }
 }
 
+pub struct FixedViewer<'a, T> {
+    inner: &'a Fixed<T>,
+}
+//
 // lets have debug way of seeing the column for dev
-impl<T: Display> Debug for Fixed<T> {
+impl<'a> Debug for FixedViewer<'a, f32> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{}\n----\n", self.name())?;
-        let records = self.get_records();
-        for rec in records.iter() {
-            if let Some(rec) = rec {
-                writeln!(f, "{}\n", rec)?;
+        writeln!(f, "{}\n--------", self.inner.name())?;
+        for (index, not_null) in self.inner.nulls.iter().enumerate() {
+            if not_null {
+                writeln!(f, "{:3.3}", &self.inner.data[index])?;
             } else {
-                writeln!(f, "null\n")?;
+                writeln!(f, "<NULL>")?;
+            }
+        }
+        Ok(())
+    }
+}
+
+// lets have debug way of seeing the column for dev
+impl<'a> Debug for FixedViewer<'a, i32> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}\n--------", self.inner.name())?;
+        for (index, not_null) in self.inner.nulls.iter().enumerate() {
+            if not_null {
+                writeln!(f, "{}", &self.inner.data[index])?;
+            } else {
+                writeln!(f, "<NULL>")?;
             }
         }
         Ok(())
@@ -194,31 +225,31 @@ mod test {
         );
     }
 
-    #[test]
-    fn get_record() {
-        let col = Fixed {
-            name: "test col".to_string(),
-            data: vec![1, 2, 3, 0, 0, 0, 4, 5, 0, 6],
-            nulls: bitvec![
-                true, true, true, false, false, false, true, true, false, true
-            ],
-        };
-
-        let records = col.get_records();
-        assert_eq!(
-            records,
-            vec![
-                Some(&1),
-                Some(&2),
-                Some(&3),
-                None,
-                None,
-                None,
-                Some(&4),
-                Some(&5),
-                None,
-                Some(&6)
-            ]
-        );
-    }
+    // #[test]
+    // fn get_record() {
+    //     let col = Fixed {
+    //         name: "test col".to_string(),
+    //         data: vec![1, 2, 3, 0, 0, 0, 4, 5, 0, 6],
+    //         nulls: bitvec![
+    //             true, true, true, false, false, false, true, true, false, true
+    //         ],
+    //     };
+    //
+    //     let records = col.get_records();
+    //     assert_eq!(
+    //         records,
+    //         vec![
+    //             Some(&1),
+    //             Some(&2),
+    //             Some(&3),
+    //             None,
+    //             None,
+    //             None,
+    //             Some(&4),
+    //             Some(&5),
+    //             None,
+    //             Some(&6)
+    //         ]
+    //     );
+    // }
 }
