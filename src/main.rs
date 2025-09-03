@@ -6,6 +6,6 @@ mod text;
 mod util;
 
 fn main() {
-    let col = fixed::Fixed::test_new();
-    println!("{:?}", col);
+    let col = fixed::FloatArray::test_new();
+    println!("{:?}", col.get_records());
 }
