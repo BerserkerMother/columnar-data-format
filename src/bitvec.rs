@@ -1,7 +1,4 @@
-use std::{
-    iter::Enumerate,
-    ops::{Index, IndexMut},
-};
+use std::ops::Index;
 
 #[macro_export]
 macro_rules! bitvec {
@@ -103,7 +100,7 @@ impl BitVec {
         }
     }
 
-    pub fn iter(&self) -> Iter {
+    pub fn iter(&self) -> Iter<'_> {
         Iter {
             ptr: self.inner.as_slice(),
             length: self.length,
