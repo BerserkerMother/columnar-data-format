@@ -16,6 +16,7 @@ The problem with the first approach is three fold. First, we are paying for 8 mo
 
 ## Tips
 - When haivng a struct with generic interface like Fixed<T>, It is feasible to define concrete types like `type IntArray = Fixed<i32>` or `type FloatArray = Fixed<f32>`. I believe this makes a cleaner api for the consumer.
+- Macro rules can make tedious tasks easier. For example, if we want to type alias as the above, we can define a macro which takes type name, native rust type, and docs if any to alias type automatically. It looks like `typedef!(UInt8Array, u8, "8-bit unsigned interger)` and of course it can be encapsulated more information or do more things depending on needs.
 
 ## To read
 - [x] When to use columnar data format. [link](https://www.tinybird.co/blog-posts/when-to-use-columnar-database)
