@@ -20,9 +20,25 @@
 
 // Lets to an int and float type def.
 
-pub type IntArray = Fixed<i32>;
+// let's write a macro for type aliasing
 
-pub type FloatArray = Fixed<f32>;
+macro_rules! typedef {
+    ($name:ident, $type:ty, $doc:literal) => {
+        #[doc = $doc]
+        pub type $name = Fixed<$type>;
+    };
+}
+
+typedef!(Int8Array, i8, "8-bit signed interger");
+typedef!(Int16Array, i16, "16-bit signed interger");
+typedef!(Int32Array, i32, "32-bit signed interger");
+
+typedef!(UInt8Array, u8, "8-bit unsigned interger");
+typedef!(UInt16Array, u16, "16-bit unsigned interger");
+typedef!(UInt32Array, u32, "32-bit unsigned interger");
+
+typedef!(Float32Array, f32, "32-bit float");
+typedef!(Float64Array, f64, "64-bit float");
 
 use std::fmt::Debug;
 
