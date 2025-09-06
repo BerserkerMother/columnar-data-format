@@ -13,8 +13,9 @@ macro_rules! bitvec {
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct BitVec {
-    inner: Vec<u8>, // 24 byte
-    length: usize,  // 8 byte
+    inner: Vec<u8>,    // 24 byte
+    length: usize,     // 8 byte
+    null_count: usize, // 8 byte
 }
 
 impl BitVec {
@@ -40,6 +41,10 @@ impl BitVec {
         } else {
             self.inner[byte] &= !(1 << bit)
         }
+
+        if !value {
+            self.null_count += 1;
+        }
     }
 
     pub fn pop(&mut self) -> bool {
@@ -51,6 +56,9 @@ impl BitVec {
             self.inner.pop().unwrap();
         }
         self.length -= 1;
+        if value == 0 {
+            self.null_count -= 1;
+        }
         value == 1
     }
 
@@ -89,6 +97,9 @@ impl BitVec {
         let byte = index / 8;
         let bit = index % 8;
         self._set(byte, bit, value);
+        if !value {
+            self.null_count += 1;
+        }
     }
 
     #[inline]
