@@ -6,15 +6,15 @@
 // values; there first one is 0..4 bytes in the data buffer and the second is 4..10. subsequently
 // length of first element is 4-0=4 and the second 10-4=6
 
-pub trait FromByteRef<'a> {
-    fn from_bytes(bytes: &'a [u8]) -> Self;
+pub trait FromByteRef {
+    fn from_bytes(bytes: &[u8]) -> &Self;
 }
 
 pub trait ToBytesRef {
     fn to_bytes(&self) -> &[u8];
 }
 
-impl<T: AsRef<[u8]>> ToBytesRef for T {
+impl<T: AsRef<[u8]> + ?Sized> ToBytesRef for T {
     fn to_bytes(&self) -> &[u8] {
         self.as_ref()
     }
@@ -33,7 +33,7 @@ pub struct Variable<T: ?Sized> {
 }
 
 // dervie(Default) asks for T: Default in other impls
-impl<T> Default for Variable<T> {
+impl<T: ?Sized> Default for Variable<T> {
     fn default() -> Self {
         Variable {
             data: Default::default(),
@@ -44,12 +44,12 @@ impl<T> Default for Variable<T> {
     }
 }
 
-impl<T: ToBytesRef> Variable<T> {
+impl<T: ToBytesRef + ?Sized> Variable<T> {
     pub fn new() -> Variable<T> {
         Variable::default()
     }
 
-    pub fn add(&mut self, item: T) {
+    pub fn add(&mut self, item: &T) {
         let bytes: &[u8] = item.to_bytes();
         let length = bytes.len() + self.offset.last().unwrap();
 
@@ -59,8 +59,8 @@ impl<T: ToBytesRef> Variable<T> {
     }
 }
 
-impl<'a, T: FromByteRef<'a>> Variable<T> {
-    pub fn get(&'a self, index: usize) -> Option<Option<T>> {
+impl<T: FromByteRef + ?Sized> Variable<T> {
+    pub fn get(&self, index: usize) -> Option<Option<&T>> {
         if self.offset.len() - 1 < index {
             return None;
         }
@@ -79,8 +79,8 @@ impl<'a, T: FromByteRef<'a>> Variable<T> {
     }
 }
 
-impl<'a> FromByteRef<'a> for &'a str {
-    fn from_bytes(bytes: &[u8]) -> &str {
+impl FromByteRef for str {
+    fn from_bytes(bytes: &[u8]) -> &Self {
         unsafe { str::from_utf8_unchecked(bytes) }
     }
 }
