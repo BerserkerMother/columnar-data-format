@@ -1,3 +1,5 @@
+use crate::variable::{ByteArray, StringArray};
+
 mod bitvec;
 mod database;
 mod fixed;
@@ -9,7 +11,7 @@ mod variable;
 fn main() {
     // let col = fixed::FloatArray::test_new();
     // dbg!(col.get_records().nth(9).unwrap());
-    let mut col = variable::Variable::<str>::new();
+    let mut col = StringArray::new();
     col.add("hahah");
     col.add("wow this world is great");
     col.add("wow this world is great");
@@ -21,7 +23,7 @@ fn main() {
     dbg!(col.get(0));
     dbg!(col.get(10));
 
-    let mut col = variable::Variable::<[u8]>::new();
+    let mut col = ByteArray::new();
     col.add(b"hahah");
     col.add(b"wow this world is great");
     col.add(b"wow this world is great");
