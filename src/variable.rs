@@ -84,3 +84,9 @@ impl FromByteRef for str {
         unsafe { str::from_utf8_unchecked(bytes) }
     }
 }
+
+impl FromByteRef for [u8] {
+    fn from_bytes(bytes: &[u8]) -> &Self {
+        bytes
+    }
+}

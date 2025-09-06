@@ -20,4 +20,16 @@ fn main() {
     col.validity.set(0, false);
     dbg!(col.get(0));
     dbg!(col.get(10));
+
+    let mut col = variable::Variable::<[u8]>::new();
+    col.add(b"hahah");
+    col.add(b"wow this world is great");
+    col.add(b"wow this world is great");
+    col.add(b"wow this world is great");
+    col.add(b"wow this world is great");
+    col.add(b"wow this world is great");
+    dbg!(col.get(0));
+    col.validity.set(0, false);
+    dbg!(col.get(0));
+    dbg!(col.get(10));
 }
