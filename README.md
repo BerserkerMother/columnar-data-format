@@ -5,6 +5,7 @@ A data format for purpose of learning. It's purpose is to be fast and simple.
 
 ## Mistakes
 - By the time of writing this paragraph, I have been rewriting the project four times. I can not get a clean interface for things. I have diagnose the problem however; I am trying to start from metadata! I should have started building the database it self and then getting to a good interface for metadata and serializing/deserializing would be more apparent!
+- The projcet was more complicated than I thought. Apache Parquet or Arrow are just concepts to solve certain problems. I've read Arrow format guide and it seemed easy enought. But now, I am stuck at implementation details. One of the key problems that ariases here is how to show a record. A record has multiple fields with different data types, however, Arrow only specifies how data structure is. I've read the rust implementation of Parquet and Arrow only to realize I need to make a connection between how I operate on data and how I show them to user. This project isn't really simple and needs a carefully outlined structure. I should have invested time in thinking in terms of semantics and how things can be related sooner; instead, I put a lot of effort on how the physical data structures should be, which is also imporant.
 
 ## Insight
 - CPU cache lines is 64 bytes meaning it can read 64 bytes from memory at once. If we align things 64 bytes, we would get max performance since the SIMD register is also 64byte.
