@@ -26,8 +26,6 @@ use crate::bitvec::BitVec;
 
 pub type StringArray = Variable<str>;
 
-pub type ByteArray = Variable<[u8]>;
-
 #[derive(Debug)]
 pub struct Variable<T: ?Sized> {
     data: Vec<u8>,
