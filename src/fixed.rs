@@ -45,8 +45,8 @@ use std::fmt::Debug;
 use crate::bitvec;
 use crate::bitvec::BitVec;
 
+#[derive(Debug)]
 pub struct Fixed<T> {
-    name: String,  // 24 byets
     data: Vec<T>,  // 24 bytes
     nulls: BitVec, // 24 bytes
 }
@@ -54,7 +54,6 @@ pub struct Fixed<T> {
 impl<T> Default for Fixed<T> {
     fn default() -> Self {
         Fixed {
-            name: String::default(),
             data: vec![],
             nulls: BitVec::default(),
         }
@@ -64,7 +63,6 @@ impl<T> Default for Fixed<T> {
 impl Fixed<i32> {
     pub fn test_new() -> Fixed<i32> {
         Fixed {
-            name: "test col".to_string(),
             data: vec![1, 2, 3, 0, 0, 0, 4, 5, 0, 6],
             nulls: bitvec![
                 true, true, true, false, false, false, true, true, true, true
@@ -76,7 +74,6 @@ impl Fixed<i32> {
 impl Fixed<f32> {
     pub fn test_new() -> Fixed<f32> {
         Fixed {
-            name: "test col".to_string(),
             data: vec![
                 1.123f32, 2f32, 3f32, 0f32, 0f32, 0f32, 4f32, 5f32, 0f32, 6f32,
             ],
@@ -88,16 +85,8 @@ impl Fixed<f32> {
 }
 
 impl<T> Fixed<T> {
-    pub fn new(name: String) -> Fixed<T> {
-        Fixed {
-            name,
-            ..Default::default()
-        }
-    }
-
-    // it should have some way of getting metadata like name. lets go for name for now.
-    pub fn name(&self) -> &str {
-        &self.name
+    pub fn new() -> Fixed<T> {
+        Default::default()
     }
 
     // we always add record the end of data.
@@ -193,7 +182,6 @@ impl<'a, T: Copy> ExactSizeIterator for FixedViewer<'a, T> {}
 // lets have debug way of seeing the column for dev
 impl<'a> Debug for FixedViewer<'a, f32> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{}\n--------", self.inner.name())?;
         for (index, not_null) in self.inner.nulls.iter().enumerate() {
             if not_null {
                 writeln!(f, "{:3.3}", &self.inner.data[index])?;
@@ -208,7 +196,6 @@ impl<'a> Debug for FixedViewer<'a, f32> {
 // lets have debug way of seeing the column for dev
 impl<'a> Debug for FixedViewer<'a, i32> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{}\n--------", self.inner.name())?;
         for (index, not_null) in self.inner.nulls.iter().enumerate() {
             if not_null {
                 writeln!(f, "{}", &self.inner.data[index])?;
@@ -241,7 +228,6 @@ mod test {
     #[test]
     fn delete_record() {
         let mut col = Fixed {
-            name: "test col".to_string(),
             data: vec![1, 2, 3, 0, 0, 0, 4, 5, 0, 6],
             nulls: bitvec![
                 true, true, true, false, false, false, true, true, false, true
@@ -260,7 +246,6 @@ mod test {
     #[test]
     fn update_record() {
         let mut col = Fixed {
-            name: "test col".to_string(),
             data: vec![1, 2, 3, 0, 0, 0, 4, 5, 0, 6],
             nulls: bitvec![
                 true, true, true, false, false, false, true, true, false, true
